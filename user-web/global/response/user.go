@@ -7,21 +7,18 @@ type UserResponse struct {
 	Birthday uint64 `json:"birthday"`
 }
 
-type UserListResponse struct {
-	BaseResponse
-	Data []UserResponse `json:"data"`
+func NewSuccessUserListResponse(data interface{}) BaseResponse {
+	return NewUserListResponse(200, "OK", data)
 }
 
-func NewSuccessUserListResponse() UserListResponse {
-	return NewUserListResponse(200, "OK")
+func NewFailedUserListResponse(code int, message string) BaseResponse {
+	return NewUserListResponse(code, message, nil)
 }
 
-func NewUserListResponse(code int, message string) UserListResponse {
-	return UserListResponse{
-		BaseResponse: BaseResponse{
-			Code:    code,
-			Message: message,
-		},
-		Data: make([]UserResponse, 0),
+func NewUserListResponse(code int, message string, data interface{}) BaseResponse {
+	return BaseResponse{
+		Code:    code,
+		Message: message,
+		Data:    data,
 	}
 }

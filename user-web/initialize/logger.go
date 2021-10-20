@@ -10,7 +10,7 @@ func MustInitLogger() {
 }
 
 func InitLogger() error {
-	logger, err := zap.NewDevelopment()
+	logger, err := zap.NewProduction()
 	if err != nil {
 		return err
 	}
