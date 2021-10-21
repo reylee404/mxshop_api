@@ -12,6 +12,12 @@ type UserListResponse struct{
 	UserList []UserResponse `json:"user_list"`
 }
 
+type PasswordLoginResponse struct {
+	Id int32 `json:"id"`
+	NickName string `json:"nick_name"`
+	Token string `json:"token"`
+}
+
 func NewSuccessResponse(data interface{}) BaseResponse {
 	return NewBaseResponse(200, "OK", data)
 }

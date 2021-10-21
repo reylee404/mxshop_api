@@ -3,7 +3,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"mxshop_api/user-web/middlewares"
+	"mxshop_api/user-web/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -52,8 +56,26 @@ func PasswordLogin(c *gin.Context) {
 	}
 
 	if checkPassword.Success {
-		c.JSON(http.StatusOK, response.NewSuccessResponse(map[string]string{
-			"token": "aaaa",
+		j := middlewares.NewJWT()
+		token, err := j.CreateToken(models.CustomClaims{
+			Id:          uint(user.Id),
+			NickName:    user.NickName,
+			AuthorityId: uint(user.Role),
+			StandardClaims: jwt.StandardClaims{
+				NotBefore: time.Now().Unix(),
+				ExpiresAt: time.Now().Add(time.Hour).Unix(),
+				Issuer:    "Lynn",
+			},
+		})
+
+		if err != nil {
+			c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, response.NewSuccessResponse(response.PasswordLoginResponse{
+			Id: user.Id,
+			NickName: user.NickName,
+			Token: token,
 		}))
 	} else {
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "用户名或密码错误"))
