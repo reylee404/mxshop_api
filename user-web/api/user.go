@@ -2,13 +2,16 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
+	"mxshop_api/user-web/global"
 	"mxshop_api/user-web/global/response"
 	"mxshop_api/user-web/proto"
 	"net/http"
+	"strconv"
 )
 
 func GrpcErrToHttpMessage(err error) string {
@@ -24,24 +27,29 @@ func GrpcErrToHttpMessage(err error) string {
 }
 
 func GetUserList(c *gin.Context) {
-	conn, err := grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
+	page := DefaultAtoi(c.Query("page"), 1)
+	pageSize := DefaultAtoi(c.Query("page_size"), 10)
+
+	host := global.ServerConfig.UserSrvConfig.Host
+	port := global.ServerConfig.UserSrvConfig.Port
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
 	if err != nil {
 		zap.L().Error("GetUserList", zap.String("dial", err.Error()))
-		c.JSON(http.StatusOK, response.NewFailedUserListResponse(500, err.Error()))
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
 		return
 	}
 	client := proto.NewUserClient(conn)
 	userList, err := client.GetUserList(context.Background(), &proto.PageInfo{
-		PIndex: 1,
-		PSize:  2,
+		PIndex: uint32(page),
+		PSize:  uint32(pageSize),
 	})
 	if err != nil {
 		zap.L().Error("GetUserList", zap.String("SrvClientErr", err.Error()))
-		c.JSON(http.StatusOK, response.NewFailedUserListResponse(500, GrpcErrToHttpMessage(err)))
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, GrpcErrToHttpMessage(err)))
 		return
 	}
 
-	data := make([]response.UserResponse, 0, 10)
+	list := make([]response.UserResponse, 0, 10)
 	for _, u := range userList.Data {
 		userResponse := response.UserResponse{
 			Id:       u.Id,
@@ -49,7 +57,20 @@ func GetUserList(c *gin.Context) {
 			NickName: u.NickName,
 			Birthday: u.Birthday,
 		}
-		data = append(data, userResponse)
+		list = append(list, userResponse)
 	}
-	c.JSON(http.StatusOK, response.NewSuccessUserListResponse(data))
+	data := response.UserListResponse{
+		Total:    userList.Total,
+		UserList: list,
+	}
+
+	c.JSON(http.StatusOK, response.NewSuccessResponse(data))
+}
+
+func DefaultAtoi(value string, defaultValue int) int {
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		result = defaultValue
+	}
+	return result
 }

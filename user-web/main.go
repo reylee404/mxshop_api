@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"mxshop_api/user-web/global"
 
 	"go.uber.org/zap"
 
@@ -11,14 +11,15 @@ import (
 
 func main() {
 
-	port := flag.Int("port", 8080, "端口号")
-	flag.Parse()
-
 	initialize.MustInitLogger()
+	initialize.InitConfig()
 
 	engine := initialize.InitGinAndRouters()
-	err := engine.Run(fmt.Sprintf(":%d", *port))
+
+	addr := fmt.Sprintf(":%d", global.ServerConfig.Port)
+	zap.L().Info("starting gin web", zap.String("name", global.ServerConfig.Name),zap.String("addr", addr))
+	err := engine.Run(addr)
 	if err != nil {
-		zap.L().Panic("启动失败", zap.Error(err))
+		zap.L().Panic("start Failed", zap.Error(err))
 	}
 }
