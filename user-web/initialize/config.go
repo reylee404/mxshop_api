@@ -13,7 +13,22 @@ func getBoolEnvInfo(name string) bool {
 	return viper.GetBool(name)
 }
 
-func InitConfig() {
+// MustInitConfig 第一次初始化 config 时必须成功，否则 panic;
+// 监听到变化后导致重新解析 config 失败不 panic，只打印错误日志
+func MustInitConfig() {
+	v, err := initConfig()
+	if err != nil {
+		panic(err)
+	}
+	watchConfigFile(v, func(in fsnotify.Event) {
+		err = readAndUnmarshalConfig(v, global.ServerConfig)
+		if err != nil {
+			zap.L().Error("readAndUnmarshalConfig failed", zap.Error(err))
+		}
+	})
+}
+
+func initConfig() (*viper.Viper, error) {
 	dev := getBoolEnvInfo("MX_SHOP_DEV")
 	configFileName := "./config_pro.yaml"
 	if dev {
@@ -22,23 +37,25 @@ func InitConfig() {
 
 	v := viper.New()
 	v.SetConfigFile(configFileName)
-	readAndUnmarshalConfig(v, global.ServerConfig)
-
-	v.WatchConfig()
-	v.OnConfigChange(func(in fsnotify.Event) {
-		zap.L().Info("config changed", zap.String("name", in.Name))
-		readAndUnmarshalConfig(v, global.ServerConfig)
-	})
+	err := readAndUnmarshalConfig(v, global.ServerConfig)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 
 }
 
-func readAndUnmarshalConfig(v *viper.Viper, serverConfig *config.ServerConfig) {
+func watchConfigFile(v *viper.Viper, run func(in fsnotify.Event)) {
+	v.WatchConfig()
+	v.OnConfigChange(run)
+}
+
+func readAndUnmarshalConfig(v *viper.Viper, serverConfig *config.ServerConfig) error {
 	if err := v.ReadInConfig(); err != nil {
-		zap.L().Error("config not found", zap.Error(err))
-		return
+		return err
 	}
 	if err := v.Unmarshal(serverConfig); err != nil {
-		zap.L().Error("config unmarshal failed", zap.Error(err))
-		return
+		return err
 	}
+	return nil
 }

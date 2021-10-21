@@ -12,12 +12,14 @@ import (
 func main() {
 
 	initialize.MustInitLogger()
-	initialize.InitConfig()
+	initialize.MustInitConfig()
+	initialize.MustInitTrans("zh")
+	initialize.MustInitValidators()
 
 	engine := initialize.InitGinAndRouters()
 
 	addr := fmt.Sprintf(":%d", global.ServerConfig.Port)
-	zap.L().Info("starting gin web", zap.String("name", global.ServerConfig.Name),zap.String("addr", addr))
+	zap.L().Info("starting gin web", zap.String("name", global.ServerConfig.Name), zap.String("addr", addr))
 	err := engine.Run(addr)
 	if err != nil {
 		zap.L().Panic("start Failed", zap.Error(err))

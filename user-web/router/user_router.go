@@ -5,7 +5,10 @@ import (
 	"mxshop_api/user-web/api"
 )
 
-func RegisterUserRouter(routerGroup *gin.RouterGroup){
+func RegisterUserRouter(routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("/user")
-	group.GET("/list", api.GetUserList)
+	{
+		group.GET("/list", api.GetUserList)
+		group.POST("/pwd_login", api.PasswordLogin )
+	}
 }
