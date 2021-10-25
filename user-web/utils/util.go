@@ -14,7 +14,7 @@ func RequestBind(c *gin.Context, wantBind interface{}) (errInfo interface{}, ok 
 	if err := c.ShouldBind(wantBind); err != nil {
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
-			return response.NewBaseResponse(300, "参数错误", err.Error()), false
+			return response.NewBaseResponse(300,  err.Error(), nil), false
 		}
 		return response.NewBaseResponse(300, "参数错误",
 			removeTopStruct(errs.Translate(global.Trans))), false

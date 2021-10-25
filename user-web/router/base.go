@@ -7,5 +7,8 @@ import (
 
 func RegisterBaseRouter(routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("base")
-	group.GET("captcha", api.GetCaptcha)
+	{
+		group.GET("captcha", api.GetCaptcha)
+		group.POST("send_sms", api.SendSMS)
+	}
 }

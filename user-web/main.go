@@ -15,6 +15,7 @@ func main() {
 	initialize.MustInitConfig()
 	initialize.MustInitTrans("zh")
 	initialize.MustInitValidators()
+	initialize.InitRedis()
 
 	engine := initialize.InitGinAndRouters()
 

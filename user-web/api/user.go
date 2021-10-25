@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-redis/redis/v8"
 	"mxshop_api/user-web/middlewares"
 	"mxshop_api/user-web/models"
 	"net/http"
@@ -128,4 +129,69 @@ func GetUserList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response.NewSuccessResponse(data))
+}
+
+func Register(c *gin.Context) {
+	form := forms.RegisterForm{}
+	if bind, ok := utils.RequestBind(c, &form); !ok {
+		c.JSON(http.StatusOK, bind)
+		return
+	}
+
+	if result, err := global.RedisClient.Get(context.Background(), form.Mobile).Result(); err != nil {
+		if err == redis.Nil {
+			c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "验证码不存在"))
+		} else {
+			c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
+		}
+		return
+	} else {
+		if result != form.Code {
+			c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "验证码错误"))
+			return
+		}
+	}
+
+	host := global.ServerConfig.UserSrvConfig.Host
+	port := global.ServerConfig.UserSrvConfig.Port
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
+	if err != nil {
+		zap.L().Error("Register", zap.String("dial", err.Error()))
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
+		return
+	}
+	client := proto.NewUserClient(conn)
+
+	user, err := client.CreateUser(context.Background(), &proto.CreateUserInfo{
+		Mobile:   form.Mobile,
+		Password: form.Password,
+		NickName: form.Mobile,
+	})
+	if err != nil {
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, err.Error()))
+		return
+	}
+
+	newJWT := middlewares.NewJWT()
+	token, err := newJWT.CreateToken(models.CustomClaims{
+		Id:          uint(user.Id),
+		NickName:    user.NickName,
+		AuthorityId: uint(user.Role),
+		StandardClaims: jwt.StandardClaims{
+			NotBefore: time.Now().Unix(),
+			ExpiresAt: time.Now().Add(2 * time.Hour).Unix(),
+			Issuer:    "Lynn",
+		},
+	})
+	if err != nil {
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.NewSuccessResponse(response.PasswordLoginResponse{
+		Id:       user.Id,
+		NickName: user.NickName,
+		Token:    token,
+	}))
+
 }
