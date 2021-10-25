@@ -28,6 +28,12 @@ func PasswordLogin(c *gin.Context) {
 		return
 	}
 
+	verify := store.Verify(passwordLoginForm.CaptchaId, passwordLoginForm.CaptchaId, true)
+	if !verify {
+		c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "验证码错误"))
+		return
+	}
+
 	host := global.ServerConfig.UserSrvConfig.Host
 	port := global.ServerConfig.UserSrvConfig.Port
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
@@ -73,9 +79,9 @@ func PasswordLogin(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, response.NewSuccessResponse(response.PasswordLoginResponse{
-			Id: user.Id,
+			Id:       user.Id,
 			NickName: user.NickName,
-			Token: token,
+			Token:    token,
 		}))
 	} else {
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "用户名或密码错误"))

@@ -11,6 +11,7 @@ func InitGinAndRouters() *gin.Engine {
 	userV1Group := engine.Group("/u/v1")
 	{
 		router.RegisterUserRouter(userV1Group)
+		router.RegisterBaseRouter(userV1Group)
 	}
 	return engine
 }
