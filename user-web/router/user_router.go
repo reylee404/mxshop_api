@@ -8,10 +8,10 @@ import (
 
 func RegisterUserRouter(routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("/user")
+	group.Use(middlewares.Cors())
 	{
 		group.POST("/pwd_login", api.PasswordLogin)
 
-		group.Use(middlewares.JWTAuth())
-		group.GET("/list", middlewares.IsAdminAuth(), api.GetUserList)
+		group.GET("/list", middlewares.JWTAuth(), middlewares.IsAdminAuth(), api.GetUserList)
 	}
 }
