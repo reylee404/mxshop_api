@@ -16,7 +16,7 @@ func IsAdminAuth() gin.HandlerFunc {
 			return
 		}
 		customClaims := claims.(*models.CustomClaims)
-		if customClaims.Id != 2 {
+		if customClaims.AuthorityId != 2 {
 			context.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "无权限"))
 			context.Abort()
 			return

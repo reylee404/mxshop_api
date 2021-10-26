@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis/v8"
 	"mxshop_api/user-web/middlewares"
@@ -12,8 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
 	"mxshop_api/user-web/forms"
 	"mxshop_api/user-web/global"
 	"mxshop_api/user-web/global/response"
@@ -29,20 +26,18 @@ func PasswordLogin(c *gin.Context) {
 		return
 	}
 
-	verify := store.Verify(passwordLoginForm.CaptchaId, passwordLoginForm.CaptchaId, true)
+	verify := store.Verify(passwordLoginForm.CaptchaId, passwordLoginForm.Answer, true)
 	if !verify {
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(400, "验证码错误"))
 		return
 	}
 
-	host := global.ServerConfig.UserSrvConfig.Host
-	port := global.ServerConfig.UserSrvConfig.Port
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
+	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
 	if err != nil {
-		zap.L().Error("GetUserList", zap.String("dial", err.Error()))
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
 		return
 	}
+
 	client := proto.NewUserClient(conn)
 
 	user, err := client.GetUserByMobile(context.Background(), &proto.MobileRequest{
@@ -94,16 +89,14 @@ func GetUserList(c *gin.Context) {
 	page := utils.DefaultAtoi(c.Query("page"), 1)
 	pageSize := utils.DefaultAtoi(c.Query("page_size"), 10)
 
-	host := global.ServerConfig.UserSrvConfig.Host
-	port := global.ServerConfig.UserSrvConfig.Port
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
+	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
 	if err != nil {
-		zap.L().Error("GetUserList", zap.String("dial", err.Error()))
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
 		return
 	}
-	client := proto.NewUserClient(conn)
-	userList, err := client.GetUserList(context.Background(), &proto.PageInfo{
+
+	grpcClient := proto.NewUserClient(conn)
+	userList, err := grpcClient.GetUserList(context.Background(), &proto.PageInfo{
 		PIndex: uint32(page),
 		PSize:  uint32(pageSize),
 	})
@@ -123,12 +116,12 @@ func GetUserList(c *gin.Context) {
 		}
 		list = append(list, userResponse)
 	}
-	data := response.UserListResponse{
+	r := response.UserListResponse{
 		Total:    userList.Total,
 		UserList: list,
 	}
 
-	c.JSON(http.StatusOK, response.NewSuccessResponse(data))
+	c.JSON(http.StatusOK, response.NewSuccessResponse(r))
 }
 
 func Register(c *gin.Context) {
@@ -152,11 +145,8 @@ func Register(c *gin.Context) {
 		}
 	}
 
-	host := global.ServerConfig.UserSrvConfig.Host
-	port := global.ServerConfig.UserSrvConfig.Port
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
+	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
 	if err != nil {
-		zap.L().Error("Register", zap.String("dial", err.Error()))
 		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
 		return
 	}
