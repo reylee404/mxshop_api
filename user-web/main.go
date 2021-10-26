@@ -11,11 +11,11 @@ import (
 
 func main() {
 
+	initialize.MustInitConfig(global.ServerConfig)
 	initialize.MustInitLogger()
-	initialize.MustInitConfig()
-	initialize.MustInitTrans("zh")
-	initialize.MustInitValidators()
-	initialize.InitRedis()
+	global.Trans = initialize.MustInitTrans("zh")
+	initialize.MustInitValidators(&global.Trans)
+	initialize.InitRedis(global.RedisClient)
 
 	engine := initialize.InitGinAndRouters()
 

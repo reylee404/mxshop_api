@@ -2,23 +2,21 @@ package initialize
 
 import (
 	"fmt"
-	ut "github.com/go-playground/universal-translator"
-	"mxshop_api/user-web/global"
-
 	"github.com/gin-gonic/gin/binding"
+	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 
 	mxValidator "mxshop_api/user-web/validator"
 )
 
-func MustInitValidators() {
-	err := initValidators()
+func MustInitValidators(tran *ut.Translator) {
+	err := initValidators(tran)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func initValidators() error {
+func initValidators(tran *ut.Translator) error {
 	validate, ok := binding.Validator.Engine().(*validator.Validate)
 	if !ok {
 		return fmt.Errorf("validator cast failed")
@@ -28,7 +26,7 @@ func initValidators() error {
 	if err != nil {
 		return err
 	}
-	err = validate.RegisterTranslation("mobile", global.Trans,
+	err = validate.RegisterTranslation("mobile", *tran,
 		func(ut ut.Translator) error {
 			return ut.Add("mobile", "手机号码不合法", true)
 		},

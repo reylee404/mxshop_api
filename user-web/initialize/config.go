@@ -4,8 +4,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"mxshop_api/user-web/config"
-	"mxshop_api/user-web/global"
 )
 
 func getBoolEnvInfo(name string) bool {
@@ -15,20 +13,20 @@ func getBoolEnvInfo(name string) bool {
 
 // MustInitConfig 第一次初始化 config 时必须成功，否则 panic;
 // 监听到变化后导致重新解析 config 失败不 panic，只打印错误日志
-func MustInitConfig() {
-	v, err := initConfig()
+func MustInitConfig(config interface{}) {
+	v, err := initConfig(config)
 	if err != nil {
 		panic(err)
 	}
 	watchConfigFile(v, func(in fsnotify.Event) {
-		err = readAndUnmarshalConfig(v, global.ServerConfig)
+		err = readAndUnmarshalConfig(v, config)
 		if err != nil {
 			zap.L().Error("readAndUnmarshalConfig failed", zap.Error(err))
 		}
 	})
 }
 
-func initConfig() (*viper.Viper, error) {
+func initConfig(config interface{}) (*viper.Viper, error) {
 	dev := getBoolEnvInfo("MX_SHOP_DEV")
 	configFileName := "./config_pro.yaml"
 	if dev {
@@ -37,7 +35,7 @@ func initConfig() (*viper.Viper, error) {
 
 	v := viper.New()
 	v.SetConfigFile(configFileName)
-	err := readAndUnmarshalConfig(v, global.ServerConfig)
+	err := readAndUnmarshalConfig(v, config)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +48,11 @@ func watchConfigFile(v *viper.Viper, run func(in fsnotify.Event)) {
 	v.OnConfigChange(run)
 }
 
-func readAndUnmarshalConfig(v *viper.Viper, serverConfig *config.ServerConfig) error {
+func readAndUnmarshalConfig(v *viper.Viper, config interface{}) error {
 	if err := v.ReadInConfig(); err != nil {
 		return err
 	}
-	if err := v.Unmarshal(serverConfig); err != nil {
+	if err := v.Unmarshal(config); err != nil {
 		return err
 	}
 	return nil

@@ -1,6 +1,7 @@
 package initialize
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/en"
@@ -9,27 +10,28 @@ import (
 	"github.com/go-playground/validator/v10"
 	entranslations "github.com/go-playground/validator/v10/translations/en"
 	zhtranslations "github.com/go-playground/validator/v10/translations/zh"
-	"mxshop_api/user-web/global"
 	"reflect"
 	"strings"
 )
 
-func MustInitTrans(local string) {
-	err := InitTrans(local)
+func MustInitTrans(local string) ut.Translator {
+	tran, err := InitTrans(local)
 	if err != nil {
 		panic(err)
 	}
+	return tran
 }
 
-func InitTrans(local string) error {
-	err := initTrans(local)
+func InitTrans(local string) (ut.Translator, error) {
+	tran, err := initTrans(local)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return tran, nil
 }
 
-func initTrans(local string) (err error) {
+func initTrans(local string) (ut.Translator, error) {
+	var t ut.Translator
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterTagNameFunc(func(field reflect.StructField) string {
 			name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
@@ -42,21 +44,21 @@ func initTrans(local string) (err error) {
 		zhT := zh.New()
 		enT := en.New()
 		uni := ut.New(enT, zhT, enT)
-		global.Trans, ok = uni.GetTranslator(local)
+		t, ok = uni.GetTranslator(local)
 		if !ok {
-			return fmt.Errorf("uni.GetTranslator(%s) failed", local)
+			return nil, fmt.Errorf("uni.GetTranslator(%s) failed", local)
 		}
 
 		var err error
 		switch local {
 		case "en":
-			err = entranslations.RegisterDefaultTranslations(v, global.Trans)
+			err = entranslations.RegisterDefaultTranslations(v, t)
 		case "zh":
-			err = zhtranslations.RegisterDefaultTranslations(v, global.Trans)
+			err = zhtranslations.RegisterDefaultTranslations(v, t)
 		default:
-			err = entranslations.RegisterDefaultTranslations(v, global.Trans)
+			err = entranslations.RegisterDefaultTranslations(v, t)
 		}
-		return err
+		return t, err
 	}
-	return
+	return nil, errors.New("validate cast failed")
 }
