@@ -4,6 +4,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"mxshop_api/user-web/global"
 )
 
 func getBoolEnvInfo(name string) bool {
@@ -27,9 +28,9 @@ func MustInitConfig(config interface{}) {
 }
 
 func initConfig(config interface{}) (*viper.Viper, error) {
-	dev := getBoolEnvInfo("MX_SHOP_DEV")
+	global.Dev = getBoolEnvInfo("MX_SHOP_DEV")
 	configFileName := "./config_pro.yaml"
-	if dev {
+	if global.Dev {
 		configFileName = "./config_dev.yaml"
 	}
 

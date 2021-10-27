@@ -32,15 +32,7 @@ func PasswordLogin(c *gin.Context) {
 		return
 	}
 
-	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
-	if err != nil {
-		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
-		return
-	}
-
-	client := proto.NewUserClient(conn)
-
-	user, err := client.GetUserByMobile(context.Background(), &proto.MobileRequest{
+	user, err := global.UserClient.GetUserByMobile(context.Background(), &proto.MobileRequest{
 		Mobile: passwordLoginForm.Mobile,
 	})
 	if err != nil {
@@ -48,7 +40,7 @@ func PasswordLogin(c *gin.Context) {
 		return
 	}
 
-	checkPassword, err := client.CheckPassword(context.Background(), &proto.CheckPasswordInfo{
+	checkPassword, err := global.UserClient.CheckPassword(context.Background(), &proto.CheckPasswordInfo{
 		Password:          passwordLoginForm.Password,
 		EncryptedPassword: user.Password,
 	})
@@ -89,14 +81,7 @@ func GetUserList(c *gin.Context) {
 	page := utils.DefaultAtoi(c.Query("page"), 1)
 	pageSize := utils.DefaultAtoi(c.Query("page_size"), 10)
 
-	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
-	if err != nil {
-		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
-		return
-	}
-
-	grpcClient := proto.NewUserClient(conn)
-	userList, err := grpcClient.GetUserList(context.Background(), &proto.PageInfo{
+	userList, err := global.UserClient.GetUserList(context.Background(), &proto.PageInfo{
 		PIndex: uint32(page),
 		PSize:  uint32(pageSize),
 	})
@@ -145,14 +130,8 @@ func Register(c *gin.Context) {
 		}
 	}
 
-	conn, err := utils.GetServerConnFromConsul(global.ServerConfig.UserSrvConfig.Name)
-	if err != nil {
-		c.JSON(http.StatusOK, response.NewFailedBaseResponse(500, err.Error()))
-		return
-	}
-	client := proto.NewUserClient(conn)
 
-	user, err := client.CreateUser(context.Background(), &proto.CreateUserInfo{
+	user, err := global.UserClient.CreateUser(context.Background(), &proto.CreateUserInfo{
 		Mobile:   form.Mobile,
 		Password: form.Password,
 		NickName: form.Mobile,
