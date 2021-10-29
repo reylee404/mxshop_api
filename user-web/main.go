@@ -11,13 +11,19 @@ import (
 )
 
 func main() {
-
-	initialize.MustInitConfig(global.ServerConfig)
 	initialize.MustInitLogger()
+	initialize.MustInitConfigFromNacos(initialize.NacosManagerConfig{
+		IP:        "127.0.0.1",
+		Port:      8848,
+		NameSpace: "d4842894-685a-42ae-b012-0776520abaab",
+		DataId:    "user-web",
+		Group:     "dev",
+		Listen: true,
+	}, global.ServerConfig)
 	global.Trans = initialize.MustInitTrans("zh")
 	initialize.MustInitValidators(&global.Trans)
 	initialize.InitRedis(global.RedisClient)
-	_  = initialize.InitSrvConn()
+	_ = initialize.InitSrvConn()
 
 	engine := initialize.InitGinAndRouters()
 
