@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	NacosConfig  = &config.NacosConfig{}
 	ServerConfig = &config.ServerConfig{}
 	Trans        ut.Translator
 	RedisClient  *redis.Client

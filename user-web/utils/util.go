@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashicorp/consul/api"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"mxshop_api/user-web/global"
@@ -82,4 +83,9 @@ func GetServerConnFromConsul(serverName string) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 	return conn, nil
+}
+
+func GetBoolEnvInfo(name string) bool {
+	viper.AutomaticEnv()
+	return viper.GetBool(name)
 }

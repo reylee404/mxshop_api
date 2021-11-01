@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"encoding/json"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
@@ -9,6 +10,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
 	"mxshop_api/user-web/global"
 )
 
@@ -115,9 +117,9 @@ func (n *NacosConfigManager) initConfigClient() (err error) {
 		LogLevel:            "debug",
 	}
 
-	n.client, err = clients.CreateConfigClient(map[string]interface{}{
-		"serverConfigs": sc,
-		"clientConfigs": cc,
+	n.client, err = clients.NewConfigClient(vo.NacosClientParam{
+		ClientConfig:  &cc,
+		ServerConfigs: sc,
 	})
 	if err != nil {
 		return err
@@ -150,15 +152,10 @@ func (n *NacosConfigManager) UnmarshalConfig(data []byte, config interface{}) er
 	return nil
 }
 
-func getBoolEnvInfo(name string) bool {
-	viper.AutomaticEnv()
-	return viper.GetBool(name)
-}
-
 // MustInitConfig 第一次初始化 config 时必须成功，否则 panic;
 // 监听到变化后导致重新解析 config 失败不 panic，只打印错误日志
-func MustInitConfig(config interface{}) {
-	v, err := initConfig(config)
+func MustInitConfig(configFileName string, config interface{}) {
+	v, err := initConfig(configFileName, config)
 	if err != nil {
 		panic(err)
 	}
@@ -170,13 +167,7 @@ func MustInitConfig(config interface{}) {
 	})
 }
 
-func initConfig(config interface{}) (*viper.Viper, error) {
-	global.Dev = getBoolEnvInfo("MX_SHOP_DEV")
-	configFileName := "./config_pro.yaml"
-	if global.Dev {
-		configFileName = "./config_dev.yaml"
-	}
-
+func initConfig(configFileName string, config interface{}) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigFile(configFileName)
 	err := readAndUnmarshalConfig(v, config)

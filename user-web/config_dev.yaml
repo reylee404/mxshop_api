@@ -1,16 +1,6 @@
-name: 'user-web'
-port: 8080
-
-user_srv:
-  name: 'user-srv'
-
-jwt:
-  key: 'P8g9PjUx3wfIMRcyAU0HCfbvIbe4sSsb'
-
-redis:
-  host: '127.0.0.1'
-  port: 6379
-
-consul:
-  host: '127.0.0.1'
-  port: 8500
+ip: "127.0.0.1"
+port: 8848
+name_space: "d4842894-685a-42ae-b012-0776520abaab"
+data_id: "user-web"
+group: "dev"
+listen: true

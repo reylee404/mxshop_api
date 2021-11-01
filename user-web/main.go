@@ -12,13 +12,19 @@ import (
 
 func main() {
 	initialize.MustInitLogger()
+	global.Dev = utils.GetBoolEnvInfo("MX_SHOP_DEV")
+	configFileName := "./config_pro.yaml"
+	if global.Dev {
+		configFileName = "./config_dev.yaml"
+	}
+	initialize.MustInitConfig(configFileName, global.NacosConfig)
 	initialize.MustInitConfigFromNacos(initialize.NacosManagerConfig{
-		IP:        "127.0.0.1",
-		Port:      8848,
-		NameSpace: "d4842894-685a-42ae-b012-0776520abaab",
-		DataId:    "user-web",
-		Group:     "dev",
-		Listen: true,
+		IP:        global.NacosConfig.IP,
+		Port:      global.NacosConfig.Port,
+		NameSpace: global.NacosConfig.NameSpace,
+		DataId:    global.NacosConfig.DataId,
+		Group:     global.NacosConfig.Group,
+		Listen:    global.NacosConfig.Listen,
 	}, global.ServerConfig)
 	global.Trans = initialize.MustInitTrans("zh")
 	initialize.MustInitValidators(&global.Trans)
